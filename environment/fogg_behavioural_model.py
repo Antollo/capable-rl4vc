@@ -5,18 +5,17 @@ import random
 import math
 from gym import error, spaces, utils
 
-
-    
 # one episode is one day
 
 class Patient(Env):
 
-    def __init__(self, behaviour_threshold=25, preferred_activity=0,
+    def __init__(self, behaviour_threshold=25, id=0, preferred_activity=0,
                  motivated_by=0, preferred_max_num_notifications=3,
-                 good_time=1, habituation=False, time_preference_update_step=100000000):
+                 good_time=1, habituation=False, time_preference_update_step=100000000, num_all_pat=50):
         self.behaviour_threshold = behaviour_threshold
+        self.id = id
         self.preferred_activity = preferred_activity  # 0 walking, 1 tai chi, 2 imagery training, 3 gratitude journal
-        self.motivated_by = motivated_by
+        self.motivated_by = motivated_by  # Cue to action, Attitude (OE), Competence, Social norms
         self.liked_prompt = 0
         self.adequate_difficulty = 0
         self.adequate_context = 0
@@ -24,7 +23,7 @@ class Patient(Env):
         self.habituation = habituation
         self.time_preference_update_step = time_preference_update_step
         self.action_space = spaces.MultiDiscrete([2, 4, 4, 3])  # send, activity type, message type, difficulty
-        self.observation_space = spaces.MultiDiscrete([2, 3, 2,
+        self.observation_space = spaces.MultiDiscrete([num_all_pat, 2, 3, 2,
                                                        2, 2, 2, 2, 2,
                                                        2, 2,
                                                        4, 2,
@@ -43,7 +42,7 @@ class Patient(Env):
         self.arousal_list = random.choices([0, 1, 2], weights=(0.4, 0.2, 0.4), k=23)
         self.activity_performed = [0]
 
-        self.selected_actions = [[0,0,0,0]]
+        self.selected_actions = [[0, 0, 0, 0]]
         self.num_performed = []
         self.num_notified = []
         self._start_time_randomiser()
@@ -61,6 +60,8 @@ class Patient(Env):
         self.h_nonstationary = []
         self.observation_list = [self._get_current_state()]
         self.reset()
+
+        # patient id
         # valence =1 #negative/ positive
         # arousal = 1 # low, mid, high
         # cognitive_load = 0 # low, high
@@ -99,6 +100,7 @@ class Patient(Env):
             self.behaviour_threshold = self.behaviour_threshold + 0.15  # increase the threshold for performing action
 
     def step(self, action: tuple):
+        # send, activity type, message type, difficulty
         self._update_patients_activity_score(action[1])
         self._update_liked_prompt(action[2])
         self._check_if_adequate_difficulty(action[3])
@@ -116,6 +118,9 @@ class Patient(Env):
                 self.activity_performed.append(1)
                 self.selected_actions.append([1, action[1], action[2], action[3]])
                 reward = 20
+                if self.last_activity_score == 1:  # selected liked activity
+                    reward = reward + 5
+
             else:
                 self.activity_performed.append(0)
                 self.selected_actions.append([0, action[1], action[2], action[3]])
@@ -123,8 +128,11 @@ class Patient(Env):
                     reward = -1
                 else:
                     reward = -10
-            # if self.last_activity_score == 1:  # selected liked activity
-            #     reward = reward + 5
+
+
+            if self.liked_prompt == 1:  # selected liked activity
+                reward = reward + 2
+
         else:
             reward = 0.0
         info = dict()
@@ -171,7 +179,7 @@ class Patient(Env):
         t = self._time_since_last_activity()
         number_of_hours_slept = 1 if self.awake_list[-24:].count('sleeping') >= 7 else 0
 
-        return np.array([self.valence, self.arousal, self.cognitive_load,
+        return np.array([self.id, self.valence, self.arousal, self.cognitive_load,
                          sleeping, number_of_hours_slept, self.last_activity_score,
                          self.liked_prompt, t,
                          location, d[self.motion_activity_list[-1]],
@@ -188,7 +196,7 @@ class Patient(Env):
         Function that decides if the behaviour will be performed or not based on Fogg's Behavioural Model
         """
         behaviour = motivation * ability * trigger
-        return behaviour > self.behaviour_threshold
+        return behaviour >= self.behaviour_threshold
 
     def get_motivation(self):
         """
@@ -252,7 +260,7 @@ class Patient(Env):
         elif n == 1:
             tired_of_repeating_the_activity = 0
 
-        ready = self._time_since_last_activity()  # this should be a system rule
+        # ready = self._time_since_last_activity()  # this should be a system rule
         load = 1 if self.cognitive_load == 0 else 0
         confidence = 1 if sum(self.activity_performed) >= self.confidence_threshold else 0
 
@@ -506,10 +514,10 @@ class Patient(Env):
         if selected_activity == self.preferred_activity:
             self.last_activity_score = 1
         else:
-            if self.valence == 1:
-                self.last_activity_score = random.choices([0, 1], weights=(0.2, 0.8), k=1)[0]
-            else:
-                self.last_activity_score = 0
+            # if self.valence == 1:
+            #     self.last_activity_score = random.choices([0, 1], weights=(0.2, 0.8), k=1)[0]
+            # else:
+            self.last_activity_score = 0
 
 
 def update_patient_arousal():

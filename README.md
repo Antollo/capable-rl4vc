@@ -16,12 +16,8 @@ The environment name is *rl*. You can activate by executing the following comman
 > source activate rl
 ```
 ### Alternatively
-You can run in docker container. This might first require installation of docker:
-```
-(Linux)
-> curl https://get.docker.com | sh \
-  && sudo systemctl --now enable docker
-```
+You can run in docker container. This might first require installation of docker and [nvidia docker](https://docs.nvidia.com/ai-enterprise/deployment-guide/dg-docker.html)
+
 Than building an image
 ```
 sudo docker build -t exp .
@@ -29,6 +25,6 @@ sudo docker build -t exp .
 To explore experimental notebooks run 
 
 ```
-sudo docker run -p 8899:8899 exp:latest jupyter notebook --port=8899 --allow-root --no-browser --ip=0.0.0.0
+sudo docker run --gpus all -p 8899:8899 exp:latest jupyter notebook --port=8899 --allow-root --no-browser --ip=0.0.0.0
 
 ```

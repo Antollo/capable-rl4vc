@@ -1,8 +1,10 @@
+git+https://github.com/DLR-RM/stable-baselines3
 pandas
-gym
+gymnasium
 numpy
 matplotlib
 pandas
 scikit-learn
-stable-baselines3
-
+tqdm
+seaborn
+ipywidgets

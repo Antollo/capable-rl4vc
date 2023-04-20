@@ -1,9 +1,9 @@
-from gym import Env
+from gymnasium import Env
 import numpy as np
 from collections import deque
 import random
 import math
-from gym import error, spaces, utils
+from gymnasium import error, spaces, utils
 
 
 # one episode is one day
@@ -71,7 +71,7 @@ class Patient(Env):
         self.activity_p = 0
         self.activity_s = 0
         self.hour_steps = 0
-        return self._get_current_state()
+        return self._get_current_state(), {}
 
     def update_after_day(self):
         if self.activity_s != 0:
@@ -127,7 +127,7 @@ class Patient(Env):
             done = False
         if self.env_steps > self.time_preference_update_step:
             self.good_time = 2 # update time preference to be in the evening
-        return self._get_current_state(), reward, done, info
+        return self._get_current_state(), reward, done, False, info
 
     def _get_current_state(self):
         # valence =1 #negative/ positive
